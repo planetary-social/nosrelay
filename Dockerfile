@@ -17,11 +17,16 @@ FROM ubuntu:jammy as runner
 
 EXPOSE 7777
 
-RUN curl -fsSL https://deno.land/install.sh | sh
 RUN apt-get update && apt-get install -y --no-install-recommends  \
-    vim \
+    vim curl unzip ca-certificates \
     liblmdb0 libflatbuffers1 libsecp256k1-0 libb2-1 libzstd1 \
     && rm -rf /var/lib/apt/lists/*
+
+RUN update-ca-certificates
+RUN curl -fsSL https://deno.land/install.sh | sh
+ENV DENO_INSTALL="/root/.deno"
+ENV PATH="$DENO_INSTALL/bin:$PATH"
+RUN deno --version
 
 COPY ./strfry/config/strfry.conf /etc/strfry.conf
 
