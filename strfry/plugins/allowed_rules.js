@@ -48,7 +48,7 @@ rl.on("line", (line) => {
   const isAllowedPub = ALLOWED.pubs.hasOwnProperty(req.event.pubkey);
   const isAllowedEventKind = ALLOWED.eventKinds.includes(req.event.kind);
 
-  if (isAllowedPub || isAllowedEventKind) {
+  if (isAllowedPub && isAllowedEventKind) {
     res.action = "accept";
   } else {
     res.action = "reject";
