@@ -6,9 +6,16 @@ const ALLOWED = {
   },
   eventKinds: [
     0, // Metadata
+    1, // Short Text Note
     3, // Contacts
+    4, // Encrypted Direct Messages
+    5, // Event deletion
+    6, // Repost
+    7, // Reaction
     1059, // Gift wrap messages
+    10000, // Mute list
     10002, // Relay list metadata
+    30023, // Long-form Content
   ],
 };
 
@@ -33,6 +40,7 @@ rl.on("line", (line) => {
   const isAllowedPub = ALLOWED.pubs.hasOwnProperty(req.event.pubkey);
   const isAllowedEventKind = ALLOWED.eventKinds.includes(req.event.kind);
 
+  // Allowed npubs can publish any event kind, other npubs can only publish the allowed event kinds
   if (isAllowedPub || isAllowedEventKind) {
     res.action = "accept";
   } else {
