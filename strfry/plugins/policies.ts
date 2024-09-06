@@ -11,7 +11,7 @@ import {
 import nosPolicy from "./nos_policy.ts";
 
 const localhost = "127.0.0.1";
-const eventsIp = getEventsIp();
+const eventsIp = await getEventsIp();
 
 // Policies that reject faster should be at the top. So synchronous policies should be at the top.
 const policies = [
@@ -24,9 +24,6 @@ const policies = [
 
 for await (const msg of readStdin()) {
   const result = await pipeline(msg, policies);
-  if (result.msg.startsWith("rate-limited")) {
-    result.msg = `${result.msg}: ${msg.sourceInfo}`;
-  }
   writeStdout(result);
 }
 
