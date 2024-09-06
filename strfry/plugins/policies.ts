@@ -24,6 +24,9 @@ const policies = [
 
 for await (const msg of readStdin()) {
   const result = await pipeline(msg, policies);
+  if (result.msg.startsWith("rate-limited")) {
+    result.msg = `${result.msg}: ${msg.sourceInfo}`;
+  }
   writeStdout(result);
 }
 
