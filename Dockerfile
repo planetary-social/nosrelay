@@ -1,4 +1,4 @@
-FROM ubuntu:jammy as build
+FROM ubuntu:jammy AS build
 
 WORKDIR /build
 RUN apt update && apt install -y --no-install-recommends \
@@ -13,7 +13,7 @@ RUN git clone --branch 0.9.6 https://github.com/hoytech/strfry.git && cd strfry/
     && make clean \
     && make -j4
 
-FROM ubuntu:jammy as runner
+FROM ubuntu:jammy AS runner
 
 EXPOSE 7777
 
@@ -33,7 +33,7 @@ COPY ./strfry/config/strfry.conf /etc/strfry.conf
 RUN mkdir -p /app/strfry-db
 COPY ./strfry/plugins/ /app/plugins/
 
-RUN chmod +x /app/plugins/allowed_rules.js
+RUN chmod +x /app/plugins/policies.ts
 
 WORKDIR /app
 COPY --from=build /build/strfry/strfry strfry

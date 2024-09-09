@@ -1,0 +1,6 @@
+services:
+  nosrelay:
+    build: .
+    ports:
+      - "7777:7777"
+
