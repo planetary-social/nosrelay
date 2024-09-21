@@ -1,4 +1,4 @@
-import type { Policy } from "https://gitlab.com/soapbox-pub/strfry-policies/-/raw/develop/mod.ts";
+import type { Policy } from "https://raw.githubusercontent.com/planetary-social/strfry-policies/refs/heads/nos-changes/mod.ts";
 
 const ALLOWED = {
   pubs: {

@@ -7,7 +7,7 @@ import {
   rateLimitPolicy,
   readStdin,
   writeStdout,
-} from "https://raw.githubusercontent.com/planetary-social/strfry-policies/refs/heads/ban-interval/mod.ts";
+} from "https://raw.githubusercontent.com/planetary-social/strfry-policies/refs/heads/nos-changes/mod.ts";
 import nosPolicy from "./nos_policy.ts";
 
 const localhost = "127.0.0.1";
@@ -23,21 +23,24 @@ const policies = [
   // Async policies
   [antiDuplicationPolicy, { ttl: 60000, minLength: 50 }],
 
-  // For abusers, we ban the ip after 20 requests per minute, ban ip for 2 days
-  // Remember to leave the more loose rate limit policy at the top
+  // For abusers, we ban the ip after 20 requests per minute, ban ip for 2 days.
+  // Remember to leave the more loose rate limit policy at the top.
   [
     rateLimitPolicy,
     {
       max: 20,
       interval: one_minute,
-      ban_interval: two_days,
+      banInterval: two_days,
       whitelist: [localhost, eventsIp],
-      // We use a different db url so that this limiter is not affected by the other limiters
-      databaseUrl: "sqlite:///tmp/banning-strfry-rate-limit-policy.sqlite3",
+      // We use a different db url so that this limiter is not affected by the other limiters.
+      // The file is stored in the strfry-db folder for persistence between restarts.
+      databaseUrl:
+        "sqlite:///app/strfry-db/banning-strfry-rate-limit-policy.sqlite3",
     },
   ],
 
-  // Normal rate limit without banning, 10 requests per minute, if the ip hit this one, it won't be banned, just rate-limited
+  // Normal rate limit without banning, 10 requests per minute, if the ip hit
+  // this one, it won't be banned, just rate-limited.
   [
     rateLimitPolicy,
     {
