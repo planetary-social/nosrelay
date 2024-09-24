@@ -64,7 +64,7 @@ impl Validator {
             );
 
             // TODO: add a size limit?
-            if referenced_event.content == event.content && event.pubkey == referenced_event.pubkey
+            if referenced_event.content == event.content && referenced_event.pubkey != event.pubkey
             {
                 debug!(
                     "Event {} is a copy of event {}",
