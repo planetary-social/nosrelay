@@ -13,6 +13,7 @@ const ALLOWED = {
     6, // Repost
     7, // Reaction
     1059, // Gift wrap messages
+    1984, // Reports
     10000, // Mute list
     10002, // Relay list metadata
     30023, // Long-form Content
@@ -39,6 +40,10 @@ const nosPolicy: Policy<void> = (msg) => {
   if (!isDisallowed && (isAllowedEventKind || isAllowedPub)) {
     res.action = "accept";
     res.msg = "";
+  }
+
+  if (!isAllowedEventKind) {
+    res.msg = "blocked: kind not allowed";
   }
 
   return res;
