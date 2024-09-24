@@ -40,6 +40,8 @@ const nosPolicy: Policy<void> = (msg) => {
   if (!isDisallowed && (isAllowedEventKind || isAllowedPub)) {
     res.action = "accept";
     res.msg = "";
+
+    return res;
   }
 
   if (!isAllowedEventKind) {
