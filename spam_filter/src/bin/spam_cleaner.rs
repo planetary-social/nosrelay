@@ -1,9 +1,11 @@
 use clap::Parser;
-use nostr_sdk::{Event, EventId};
+use nostr_sdk::Event;
 use serde_json::Deserializer;
 use spam_filter::{
-    analyzer_worker::ValidationWorker, deletion_task::spawn_deletion_task,
-    event_analyzer::Validator, worker_pool::WorkerPool,
+    analyzer_worker::ValidationWorker,
+    deletion_task::spawn_deletion_task,
+    event_analyzer::{RejectReason, Validator},
+    worker_pool::WorkerPool,
 };
 use std::error::Error;
 use std::io;
@@ -64,7 +66,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     });
 
     let (validation_sender, validation_receiver) = mpsc::channel::<Event>(100);
-    let (deletion_sender, deletion_receiver) = mpsc::channel::<EventId>(100);
+    let (deletion_sender, deletion_receiver) = mpsc::channel::<RejectReason>(100);
 
     let validator = Validator::new().await?;
     let validator_worker =

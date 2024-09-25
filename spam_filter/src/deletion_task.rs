@@ -1,5 +1,5 @@
+use crate::event_analyzer::RejectReason;
 use crate::relay_commander::RelayCommander;
-use nostr_sdk::EventId;
 use tokio::sync::mpsc;
 use tokio::time;
 use tokio_util::task::TaskTracker;
@@ -7,7 +7,7 @@ use tracing::{debug, error, info};
 
 pub fn spawn_deletion_task(
     tracker: &TaskTracker,
-    mut deletion_receiver: mpsc::Receiver<EventId>,
+    mut deletion_receiver: mpsc::Receiver<RejectReason>,
     buffer_size: usize,
     dry_run: bool,
 ) {
@@ -33,8 +33,8 @@ pub fn spawn_deletion_task(
 
                 recv_result = deletion_receiver.recv() => {
                     match recv_result {
-                        Some(event_id) => {
-                            buffer.push(event_id);
+                        Some(reject_reason) => {
+                            buffer.push(reject_reason);
                         }
                         None => {
                             break;
@@ -49,7 +49,11 @@ pub fn spawn_deletion_task(
     });
 }
 
-async fn flush_buffer(relay_commander: &RelayCommander, buffer: &mut Vec<EventId>, dry_run: bool) {
+async fn flush_buffer(
+    relay_commander: &RelayCommander,
+    buffer: &mut Vec<RejectReason>,
+    dry_run: bool,
+) {
     debug!(
         "Time based threshold elapsed, publishing buffer, {} items",
         buffer.len()

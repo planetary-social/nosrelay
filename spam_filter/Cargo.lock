@@ -1665,6 +1665,7 @@ dependencies = [
  "clap",
  "env_logger",
  "nostr-sdk",
+ "regex",
  "serde",
  "serde_json",
  "thiserror",

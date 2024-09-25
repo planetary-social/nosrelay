@@ -1,4 +1,4 @@
-use crate::event_analyzer::{EventAnalysisResult, Validator};
+use crate::event_analyzer::{EventAnalysisResult, RejectReason, Validator};
 use crate::worker_pool::WorkerTask;
 use async_trait::async_trait;
 use nostr_sdk::prelude::*;
@@ -9,14 +9,14 @@ use tracing::{debug, error, info};
 
 pub struct ValidationWorker {
     validator: Validator,
-    deletion_sender: mpsc::Sender<EventId>,
+    deletion_sender: mpsc::Sender<RejectReason>,
     validation_timeout: u64,
 }
 
 impl ValidationWorker {
     pub fn new(
         validator: Validator,
-        deletion_sender: mpsc::Sender<EventId>,
+        deletion_sender: mpsc::Sender<RejectReason>,
         validation_timeout: u64,
     ) -> Self {
         ValidationWorker {
@@ -41,11 +41,11 @@ impl WorkerTask<Event> for ValidationWorker {
             Ok(Ok(EventAnalysisResult::Reject(reason))) => {
                 info!("Rejected event {}: {}", event.id, reason);
 
-                if self.deletion_sender.send(event.id).await.is_err() {
+                if self.deletion_sender.send(reason).await.is_err() {
                     return Err(ValidatorError::ReceiverDropped(event.id).into());
                 }
             }
-            Ok(Ok(EventAnalysisResult::Accept(_))) => {
+            Ok(Ok(EventAnalysisResult::Accept)) => {
                 debug!("Accepted event {}", event.id);
             }
             Ok(Err(e)) => {
