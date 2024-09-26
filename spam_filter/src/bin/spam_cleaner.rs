@@ -21,6 +21,7 @@ use tracing_subscriber::{fmt, prelude::*, EnvFilter};
     about = "Checks events for spam and deletes them from the strfry database",
     long_about = None
 )]
+// Leave the comments, they are used for the --help message
 struct Args {
     /// Buffer size for batching delete commands
     #[arg(short, long, default_value_t = 10)]
