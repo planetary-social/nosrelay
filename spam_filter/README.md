@@ -10,4 +10,14 @@ docker compose exec -it nosrelay bash -c './strfry scan \'{"kinds":[1]}\' | spam
 nak req ws://localhost:7777
 ```
 
+You can further control the flow between pipes using `pv`:
+```
+ ./strfry scan --pause 1 '{"kinds":[1,30023],"since":1724711684,"limit":100000}' |  pv -L 100k -q |spam_cleaner --dry-run
+ ```
+
 Use `spam_cleaner --dry-run` to skip deletion. View configuration options with --help. For increase debuging info prefix with `RUST_LOG=debug`.
+
+Remember it's a good idea to backup the db first:
+```
+./strfry export | zstd -c > backup.jsonl.zst
+```
