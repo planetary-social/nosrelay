@@ -12,8 +12,11 @@ import nosPolicy from "./nos_policy.ts";
 
 const localhost = "127.0.0.1";
 const eventsIp = await getEventsIp();
+
 const one_minute = 60 * 1000;
-const two_days = 2 * 24 * 60 * one_minute;
+const one_hour = 60 * one_minute;
+const one_day = 24 * one_hour;
+const two_days = 2 * one_day;
 
 // Policies that reject faster should be at the top. So synchronous policies should be at the top.
 const policies = [
@@ -21,7 +24,8 @@ const policies = [
   [hellthreadPolicy, { limit: 100 }],
 
   // Async policies
-  [antiDuplicationPolicy, { ttl: 60000, minLength: 50 }],
+  // Let's test with one day, if it's too much we can reduce it.
+  [antiDuplicationPolicy, { ttl: one_day, minLength: 30 }],
 
   // For abusers, we ban the ip after 20 requests per minute, ban ip for 2 days.
   // Remember to leave the more loose rate limit policy at the top.
