@@ -1,7 +1,7 @@
 use clap::Parser;
 use nostr_sdk::Event;
 use serde_json::Deserializer;
-use spam_filter::{
+use event_deleter::{
     analyzer_worker::ValidationWorker,
     deletion_task::spawn_deletion_task,
     event_analyzer::{RejectReason, Validator},

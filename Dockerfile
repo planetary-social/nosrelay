@@ -19,13 +19,13 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 
 RUN rustc --version
 
-COPY ./spam_filter/Cargo.toml ./spam_filter/Cargo.lock /build/spam_filter/
+COPY ./event_deleter/Cargo.toml ./event_deleter/Cargo.lock /build/event_deleter/
 
-WORKDIR /build/spam_filter
+WORKDIR /build/event_deleter
 
 RUN cargo fetch
 
-COPY ./spam_filter/src /build/spam_filter/src
+COPY ./event_deleter/src /build/event_deleter/src
 
 RUN cargo build --release
 
@@ -54,7 +54,7 @@ WORKDIR /app
 
 COPY --from=build /build/strfry/strfry strfry
 
-COPY --from=build /build/spam_filter/target/release/spam_cleaner /usr/local/bin/spam_cleaner
+COPY --from=build /build/event_deleter/target/release/spam_cleaner /usr/local/bin/spam_cleaner
 
 RUN chmod +x /usr/local/bin/spam_cleaner
 

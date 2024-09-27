@@ -7,8 +7,9 @@ import {
   rateLimitPolicy,
   readStdin,
   writeStdout,
-} from "https://raw.githubusercontent.com/planetary-social/strfry-policies/refs/heads/nos-changes/mod.ts";
+} from "https://raw.githubusercontent.com/planetary-social/strfry-policies/refs/heads/export_log/mod.ts";
 import nosPolicy from "./nos_policy.ts";
+import broadcastVanishRequests from "./broadcast_vanish_requests.ts";
 
 const localhost = "127.0.0.1";
 const eventsIp = await getEventsIp();
@@ -53,6 +54,9 @@ const policies = [
       whitelist: [localhost, eventsIp],
     },
   ],
+
+  // Broadcast vanish requests to Redis
+  broadcastVanishRequests,
 ];
 
 for await (const msg of readStdin()) {
