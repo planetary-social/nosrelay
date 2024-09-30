@@ -1,4 +1,4 @@
-use crate::event_analyzer::RejectReason;
+use crate::event_analyzer::DeleteRequest;
 use nostr_sdk::prelude::*;
 use std::collections::HashSet;
 use std::error::Error;
@@ -10,18 +10,21 @@ pub struct RelayCommander;
 impl RelayCommander {
     pub async fn execute_delete(
         &self,
-        reject_reasons: Vec<RejectReason>,
+        delete_reason: Vec<DeleteRequest>,
         dry_run: bool,
     ) -> Result<(), Box<dyn Error>> {
         let mut ids = HashSet::new();
         let mut authors = HashSet::new();
 
-        for reason in reject_reasons {
+        for reason in delete_reason {
             match reason {
-                RejectReason::ReplyCopy(id) => {
+                DeleteRequest::ReplyCopy(id) => {
                     ids.insert(id);
                 }
-                RejectReason::ForbiddenName(pubkey) => {
+                DeleteRequest::ForbiddenName(pubkey) => {
+                    authors.insert(pubkey);
+                }
+                DeleteRequest::Vanish(_, pubkey, _) => {
                     authors.insert(pubkey);
                 }
             }

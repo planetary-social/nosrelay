@@ -1,4 +1,5 @@
 use nostr_sdk::prelude::*;
+use redis::{streams::StreamId, Value};
 use regex::Regex;
 use std::fmt::Display;
 use std::sync::LazyLock;
@@ -15,20 +16,75 @@ static REJECTED_NAME_REGEXES: LazyLock<Vec<Regex>> =
 #[derive(Debug, Clone)]
 pub enum EventAnalysisResult {
     Accept,
-    Reject(RejectReason),
+    Reject(DeleteRequest),
 }
 
 #[derive(Debug, Clone)]
-pub enum RejectReason {
+pub enum DeleteRequest {
     ReplyCopy(EventId),
     ForbiddenName(PublicKey),
+    Vanish(String, PublicKey, Option<String>),
 }
 
-impl Display for RejectReason {
+impl Display for DeleteRequest {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            RejectReason::ReplyCopy(_) => write!(f, "Reply copy"),
-            RejectReason::ForbiddenName(_) => write!(f, "Forbidden nip05"),
+            DeleteRequest::ReplyCopy(_) => write!(f, "Reply copy"),
+            DeleteRequest::ForbiddenName(_) => write!(f, "Forbidden nip05"),
+            DeleteRequest::Vanish(_, _, _) => write!(f, "Request to vanish"),
+        }
+    }
+}
+
+impl TryFrom<&StreamId> for DeleteRequest {
+    type Error = EventAnalysisError;
+
+    fn try_from(stream_id: &StreamId) -> Result<Self, Self::Error> {
+        let mut reason = Option::<String>::None;
+        let mut public_key = Option::<PublicKey>::None;
+
+        for (key, value) in stream_id.map.iter() {
+            match key.as_str() {
+                "pubkey" => {
+                    if let Value::BulkString(bytes) = value {
+                        let public_key_string = String::from_utf8(bytes.clone())
+                            .map_err(|_| EventAnalysisError::PublicKeyError)?;
+
+                        public_key = Some(
+                            PublicKey::from_hex(public_key_string)
+                                .map_err(|_| EventAnalysisError::PublicKeyError)?,
+                        );
+                    }
+                }
+                "kind" => {
+                    if let Value::Int(kind) = value {
+                        let kind = Kind::Custom(*kind as u16);
+                        if kind != Kind::Custom(62) {
+                            return Err(EventAnalysisError::NotVanishKindError);
+                        }
+                    }
+                }
+                "content" => {
+                    if let Value::BulkString(bytes) = value {
+                        reason = Some(
+                            String::from_utf8(bytes.clone())
+                                .map_err(|_| EventAnalysisError::ConversionError)?,
+                        );
+                    } else {
+                        return Err(EventAnalysisError::ConversionError);
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        match public_key {
+            Some(public_key) => Ok(DeleteRequest::Vanish(
+                stream_id.id.clone(),
+                public_key,
+                reason,
+            )),
+            None => Err(EventAnalysisError::ConversionError),
         }
     }
 }
@@ -70,13 +126,13 @@ impl Validator {
         let is_forbidden_name = is_forbidden_name_res?;
 
         if is_reply_copy {
-            return Ok(EventAnalysisResult::Reject(RejectReason::ReplyCopy(
+            return Ok(EventAnalysisResult::Reject(DeleteRequest::ReplyCopy(
                 event.id,
             )));
         }
 
         if is_forbidden_name {
-            return Ok(EventAnalysisResult::Reject(RejectReason::ForbiddenName(
+            return Ok(EventAnalysisResult::Reject(DeleteRequest::ForbiddenName(
                 event.pubkey,
             )));
         }
@@ -179,4 +235,13 @@ pub enum EventAnalysisError {
 
     #[error("Nostr error: {0}")]
     NostrError(Error),
+
+    #[error("Conversion error")]
+    ConversionError,
+
+    #[error("PublicKey error")]
+    PublicKeyError,
+
+    #[error("Not vanish kind")]
+    NotVanishKindError,
 }

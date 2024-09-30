@@ -55,7 +55,10 @@ WORKDIR /app
 COPY --from=build /build/strfry/strfry strfry
 
 COPY --from=build /build/event_deleter/target/release/spam_cleaner /usr/local/bin/spam_cleaner
+COPY --from=build /build/event_deleter/target/release/vanish_listener vanish_listener
 
 RUN chmod +x /usr/local/bin/spam_cleaner
+RUN chmod +x /app/vanish_listener
 
-ENTRYPOINT ["/app/strfry", "relay"]
+COPY ./start.sh start.sh
+CMD ./start.sh

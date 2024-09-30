@@ -6,13 +6,17 @@ edition = "2021"
 [dependencies]
 async-trait = "0.1.82"
 clap = { version = "4.5.18", features = ["derive"] }
+config = { version = "0.14.0", features = ["yaml"] }
 env_logger = "0.11.5"
+nonzero_ext = "0.3.0"
 nostr-sdk = "0.35.0"
+redis = { version = "0.27.2", features = ["tls-rustls", "tls-rustls-webpki-roots", "tokio", "tokio-comp", "tokio-rustls", "tokio-rustls-comp"] }
 regex = "1.10.6"
 serde = { version = "1.0.210", features = ["derive"] }
 serde_json = "1.0.128"
 thiserror = "1.0.64"
 tokio = { version = "1.40.0", features = ["full"] }
+tokio-rustls = "0.26.0"
 tokio-util = { version = "0.7.12", features = ["rt"] }
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
