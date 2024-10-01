@@ -7,9 +7,10 @@ import {
   rateLimitPolicy,
   readStdin,
   writeStdout,
-} from "https://raw.githubusercontent.com/planetary-social/strfry-policies/refs/heads/export_log/mod.ts";
+} from "https://raw.githubusercontent.com/planetary-social/strfry-policies/refs/heads/nos-changes/mod.ts";
 import nosPolicy from "./nos_policy.ts";
-import broadcastVanishRequests from "./broadcast_vanish_requests.ts";
+import { createBroadcastVanishRequests } from "./broadcast_vanish_requests.ts";
+import { connect, parseURL } from "https://deno.land/x/redis/mod.ts";
 
 const localhost = "127.0.0.1";
 const eventsIp = await getEventsIp();
@@ -18,6 +19,13 @@ const one_minute = 60 * 1000;
 const one_hour = 60 * one_minute;
 const one_day = 24 * one_hour;
 const two_days = 2 * one_day;
+
+const redis_url = Deno.env.get("REDIS_URL");
+const redis_connect_options = parseURL(redis_url);
+const redis = await connect(redis_connect_options);
+
+const relay_url = Deno.env.get("RELAY_URL");
+const broadcastVanishRequests = createBroadcastVanishRequests(redis, relay_url);
 
 // Policies that reject faster should be at the top. So synchronous policies should be at the top.
 const policies = [
