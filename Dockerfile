@@ -55,10 +55,10 @@ WORKDIR /app
 COPY --from=build /build/strfry/strfry strfry
 
 COPY --from=build /build/event_deleter/target/release/spam_cleaner /usr/local/bin/spam_cleaner
-COPY --from=build /build/event_deleter/target/release/vanish_listener vanish_listener
+COPY --from=build /build/event_deleter/target/release/vanish_subscriber vanish_subscriber
 
 RUN chmod +x /usr/local/bin/spam_cleaner
-RUN chmod +x /app/vanish_listener
+RUN chmod +x /app/vanish_subscriber
 
 COPY ./start.sh start.sh
 CMD ./start.sh

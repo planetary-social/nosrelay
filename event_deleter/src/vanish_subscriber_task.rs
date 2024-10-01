@@ -11,9 +11,9 @@ use tracing::{debug, error, info};
 
 static BLOCK_MILLIS: usize = 5000;
 static VANISH_STREAM_KEY: &str = "vanish_requests";
-static VANISH_LAST_ID_KEY: &str = "vanish_listener:last_id";
+static VANISH_LAST_ID_KEY: &str = "vanish_requests:deletion_subscriber:last_id";
 
-pub async fn spawn_vanish_listener(
+pub async fn spawn_vanish_subscriber(
     tracker: &TaskTracker,
     deletion_sender: mpsc::Sender<DeleteRequest>,
     mut ack_receiver: mpsc::Receiver<DeleteRequest>,
@@ -50,7 +50,7 @@ pub async fn spawn_vanish_listener(
                             if let Err(e) = save_last_id_result {
                                 error!("Failed to save last id: {}", e);
                             } else {
-                                info!("Last id processed: {}", last_id);
+                                info!("Updating last vanish stream id processed to {}", last_id);
                             }
                             last_id = id.clone();
                         }
@@ -80,7 +80,7 @@ pub async fn spawn_vanish_listener(
             .await
             .unwrap_or("0-0".to_string());
 
-        info!("Last id processed: {}", last_id);
+        info!("Starting from last id processed: {}", last_id);
 
         loop {
             tokio::select! {
@@ -102,6 +102,11 @@ pub async fn spawn_vanish_listener(
 
                     for StreamKey { ids, .. } in reply.keys {
                         for stream_id in ids {
+                            if stream_id.id == last_id {
+                                // This one was already processed
+                                continue;
+                            }
+
                             if let Err(_) = process_stream_id(&stream_id, &deletion_sender).await {
                                 return;
                             }

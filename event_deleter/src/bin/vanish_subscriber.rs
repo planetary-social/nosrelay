@@ -1,11 +1,12 @@
 use clap::Parser;
 use event_deleter::{
     deletion_task::spawn_deletion_task, event_analyzer::DeleteRequest,
-    vanish_listener_task::spawn_vanish_listener,
+    vanish_subscriber_task::spawn_vanish_subscriber,
 };
 use nonzero_ext::nonzero;
 use std::error::Error;
 use std::{env, sync::LazyLock};
+use tokio::signal::unix::{signal, SignalKind};
 use tokio::sync::mpsc;
 use tokio_util::{sync::CancellationToken, task::TaskTracker};
 use tracing::info;
@@ -17,7 +18,7 @@ static REDIS_URL: LazyLock<String> =
 #[derive(Parser, Debug)]
 #[command(
     version,
-    about = "Checks events for spam and deletes them from the strfry database",
+    about = "Checks queued vanish requests and deletes their events in the strfry database",
     long_about = None
 )]
 // Leave the comments, they are used for the --help message
@@ -37,17 +38,29 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
     let tracker = TaskTracker::new();
     let cancellation_token = CancellationToken::new();
-    let token = cancellation_token.clone();
 
     info!("Starting vanish listener...");
     info!("Dry run: {}", args.dry_run);
 
+    let token = cancellation_token.clone();
     tokio::spawn(async move {
-        tokio::signal::ctrl_c()
-            .await
-            .expect("Failed to listen for Ctrl+C");
+        // Create streams for SIGINT and SIGTERM
+        let mut sigint_stream =
+            signal(SignalKind::interrupt()).expect("Failed to set up SIGINT handler");
+        let mut sigterm_stream =
+            signal(SignalKind::terminate()).expect("Failed to set up SIGTERM handler");
+
+        // Wait for either SIGINT or SIGTERM
+        tokio::select! {
+            _ = sigint_stream.recv() => {
+                info!("Received SIGINT (Ctrl+C). Initiating graceful shutdown...");
+            }
+            _ = sigterm_stream.recv() => {
+                info!("Received SIGTERM. Initiating graceful shutdown...");
+            }
+        }
+
         token.cancel();
-        info!("Shutdown signal received. Initiating graceful shutdown...");
     });
 
     // We may never need to change these constants so for the moment lets leave them hardcoded
@@ -57,7 +70,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let (ack_sender, ack_receiver) = mpsc::channel::<DeleteRequest>(vanish_channel_size);
 
     // Read the Redis stream and send the delete requests to the deletion task
-    spawn_vanish_listener(
+    // On ack, we update the last id processed. It's safe/idempotent to process
+    // the same id multiple times but we want to avoid that
+    spawn_vanish_subscriber(
         &tracker,
         deletion_sender,
         ack_receiver,
@@ -65,6 +80,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
         cancellation_token,
     )
     .await?;
+
+    // Batches the delete requests and sends them to the strfry delete command.
+    // Sends ack messages to the Redis vanish stream listener
     spawn_deletion_task(
         &tracker,
         deletion_receiver,

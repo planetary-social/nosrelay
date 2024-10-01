@@ -1,7 +1,7 @@
 #!/bin/bash
 
 /app/strfry relay &
-/app/vanish_listener &
+/app/vanish_subscriber &
 
 # Wait for any process to exit
 wait -n

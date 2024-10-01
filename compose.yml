@@ -6,8 +6,6 @@ services:
     environment:
       - RELAY_URL=wss://example.com
       - REDIS_URL=redis://redis:6379
-      - APP__event_deleter__redis_url=redis://redis:6379
-      - APP__ENVIRONMENT=development
     depends_on:
       - redis
     restart: always
