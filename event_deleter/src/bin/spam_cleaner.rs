@@ -3,6 +3,7 @@ use event_deleter::{
     analyzer_worker::ValidationWorker,
     deletion_task::spawn_deletion_task,
     event_analyzer::{DeleteRequest, Validator},
+    relay_commander,
     worker_pool::WorkerPool,
 };
 use nonzero_ext::nonzero;
@@ -86,11 +87,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
         validator_worker,
     );
 
+    let relay_commander = relay_commander::RelayCommander::default();
+
     // Spawn the deletion task with dry_run flag
     spawn_deletion_task(
         &tracker,
         deletion_receiver,
         None,
+        relay_commander,
         args.buffer_size,
         args.dry_run,
     );

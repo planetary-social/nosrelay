@@ -19,7 +19,7 @@ pub enum EventAnalysisResult {
     Reject(DeleteRequest),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum DeleteRequest {
     ReplyCopy(EventId),
     ForbiddenName(PublicKey),

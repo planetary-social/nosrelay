@@ -97,6 +97,10 @@ Deno.test({
       sourceInfo: "1.1.1.1",
       event: buildEvent({
         kind: 1,
+        tags: [
+          ["relay", "ALL_RELAYS"],
+          ["relay", "example.com"],
+        ],
       }),
     });
 

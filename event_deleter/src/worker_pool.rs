@@ -132,7 +132,7 @@ fn create_worker_task<Item, Worker>(
                         }
                         Some(item) => {
                             trace!("{}: Worker task processing item {:?}", worker_name, item);
-                            let result = timeout(Duration::from_secs(worker_timeout_secs.get() as u64), worker.call(item)).await;
+                            let result = timeout(Duration::from_secs(worker_timeout_secs.get()), worker.call(item)).await;
 
                             match result {
                                 Ok(Ok(())) => {

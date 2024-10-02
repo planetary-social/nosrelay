@@ -1,7 +1,9 @@
 use clap::Parser;
 use event_deleter::{
-    deletion_task::spawn_deletion_task, event_analyzer::DeleteRequest,
-    vanish_subscriber_task::spawn_vanish_subscriber,
+    deletion_task::spawn_deletion_task,
+    event_analyzer::DeleteRequest,
+    relay_commander::RelayCommander,
+    vanish_subscriber_task::{spawn_vanish_subscriber, RedisClient},
 };
 use nonzero_ext::nonzero;
 use std::error::Error;
@@ -68,6 +70,19 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let vanish_channel_size = 10;
     let (deletion_sender, deletion_receiver) = mpsc::channel::<DeleteRequest>(vanish_channel_size);
     let (ack_sender, ack_receiver) = mpsc::channel::<DeleteRequest>(vanish_channel_size);
+    let redis_client = RedisClient::new(&REDIS_URL);
+    let relay_commander = RelayCommander::default();
+
+    // Batches the delete requests and sends them to the strfry delete command.
+    // Sends ack messages to the Redis vanish stream listener
+    spawn_deletion_task(
+        &tracker,
+        deletion_receiver,
+        Some(ack_sender),
+        relay_commander,
+        delete_command_batch_size,
+        args.dry_run,
+    );
 
     // Read the Redis stream and send the delete requests to the deletion task
     // On ack, we update the last id processed. It's safe/idempotent to process
@@ -76,20 +91,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
         &tracker,
         deletion_sender,
         ack_receiver,
-        &*REDIS_URL,
+        redis_client,
         cancellation_token,
     )
     .await?;
-
-    // Batches the delete requests and sends them to the strfry delete command.
-    // Sends ack messages to the Redis vanish stream listener
-    spawn_deletion_task(
-        &tracker,
-        deletion_receiver,
-        Some(ack_sender),
-        delete_command_batch_size,
-        args.dry_run,
-    );
 
     tracker.close();
     tracker.wait().await;
