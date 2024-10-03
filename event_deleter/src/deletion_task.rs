@@ -6,6 +6,8 @@ use tokio::time;
 use tokio_util::task::TaskTracker;
 use tracing::{debug, error, info};
 
+static FLUSH_PERIOD_SECONDS: u64 = 10;
+
 pub fn spawn_deletion_task<T: RawCommanderTrait>(
     tracker: &TaskTracker,
     mut deletion_receiver: mpsc::Receiver<DeleteRequest>,
@@ -16,10 +18,9 @@ pub fn spawn_deletion_task<T: RawCommanderTrait>(
 ) {
     tracker.spawn(async move {
         let mut buffer = Vec::with_capacity(buffer_size.get() as usize);
-        let flush_period_seconds = 30;
-        let flush_period = time::Duration::from_secs(flush_period_seconds);
+        let flush_period = time::Duration::from_secs(FLUSH_PERIOD_SECONDS);
 
-        info!("Publishing messages every {} seconds", flush_period_seconds);
+        info!("Publishing messages every {} seconds", FLUSH_PERIOD_SECONDS);
 
         let mut interval = time::interval(flush_period);
 
@@ -157,7 +158,7 @@ mod tests {
         deletion_sender.send(vanish.clone()).await.unwrap();
 
         // Wait an interval cycle
-        time::advance(Duration::from_secs(30)).await;
+        time::advance(Duration::from_secs(FLUSH_PERIOD_SECONDS)).await;
 
         // Check that execute_delete was called with the correct filters
         assert_executed_deletes(

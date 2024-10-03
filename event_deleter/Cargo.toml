@@ -25,6 +25,10 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 name = "spam_cleaner"
 path = "src/bin/spam_cleaner.rs"
 
+[[bin]]
+name = "vanish_subscriber"
+path = "src/bin/vanish_subscriber.rs"
+
 [profile.release]
 panic = "abort"
 
