@@ -1,7 +1,8 @@
-use crate::event_analyzer::{EventAnalysisResult, RejectReason, Validator};
+use crate::event_analyzer::{DeleteRequest, EventAnalysisResult, Validator};
 use crate::worker_pool::WorkerTask;
 use async_trait::async_trait;
 use nostr_sdk::prelude::*;
+use std::num::NonZeroU64;
 use thiserror::Error;
 use tokio::sync::mpsc;
 use tokio::time::Duration;
@@ -9,15 +10,15 @@ use tracing::{debug, error, info};
 
 pub struct ValidationWorker {
     validator: Validator,
-    deletion_sender: mpsc::Sender<RejectReason>,
-    validation_timeout: u64,
+    deletion_sender: mpsc::Sender<DeleteRequest>,
+    validation_timeout: NonZeroU64,
 }
 
 impl ValidationWorker {
     pub fn new(
         validator: Validator,
-        deletion_sender: mpsc::Sender<RejectReason>,
-        validation_timeout: u64,
+        deletion_sender: mpsc::Sender<DeleteRequest>,
+        validation_timeout: NonZeroU64,
     ) -> Self {
         ValidationWorker {
             validator,
@@ -33,7 +34,7 @@ impl WorkerTask<Event> for ValidationWorker {
         debug!("Validating event {}", event.id);
 
         match tokio::time::timeout(
-            Duration::from_secs(self.validation_timeout),
+            Duration::from_secs(self.validation_timeout.get()),
             self.validator.validate_event(event.clone()),
         )
         .await

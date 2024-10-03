@@ -5,7 +5,7 @@ import type {
 import { log } from "https://raw.githubusercontent.com/planetary-social/strfry-policies/refs/heads/nos-changes/mod.ts";
 
 const REQUEST_TO_VANISH_KIND = 62;
-const STREAM_KEY = "vanish_requests";
+const VANISH_STREAM_KEY = "vanish_requests";
 
 function createBroadcastVanishRequests(
   redis: any,
@@ -52,7 +52,7 @@ async function broadcastVanishRequest(event: any, redis: any) {
   );
 
   try {
-    await redis.xadd(STREAM_KEY, "*", event);
+    await redis.xadd(VANISH_STREAM_KEY, "*", event);
   } catch (error) {
     log(`Failed to push request  ${event.id} to Redis Stream: ${error}`);
   }

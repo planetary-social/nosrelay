@@ -11,6 +11,10 @@ class RedisMock {
   }
 }
 
+async function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 Deno.test({
   name: "pushes a vanish request with global relay filter",
   fn: async () => {
@@ -34,6 +38,9 @@ Deno.test({
 
     assertEquals((await broadcastVanishRequests(msg)).action, "accept");
     assertEquals(redisMock.called, true);
+
+    // Some time to let the logs flush
+    await wait(100);
   },
   sanitizeResources: false,
 });
@@ -61,6 +68,9 @@ Deno.test({
 
     assertEquals((await broadcastVanishRequests(msg)).action, "accept");
     assertEquals(redisMock.called, true);
+
+    // Some time to let the logs flush
+    await wait(100);
   },
   sanitizeResources: false,
 });
@@ -85,6 +95,9 @@ Deno.test({
 
     assertEquals((await broadcastVanishRequests(msg)).action, "accept");
     assertEquals(redisMock.called, false);
+
+    // Some time to let the logs flush
+    await wait(100);
   },
   sanitizeResources: false,
 });
@@ -111,6 +124,9 @@ Deno.test({
     );
     assertEquals((await broadcastVanishRequests(msg)).action, "accept");
     assertEquals(redisMock.called, false);
+
+    // Some time to let the logs flush
+    await wait(100);
   },
   sanitizeResources: false,
 });
