@@ -1,9 +1,15 @@
-ARG PLATFORM=linux/amd64
-
 # Stage 1: Build
-FROM --platform=${PLATFORM} ubuntu:jammy AS build
+ARG BUILDPLATFORM=linux/amd64
+
+FROM --platform=$BUILDPLATFORM ubuntu:jammy AS build
+
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
 
 WORKDIR /build
+
+RUN apt-get update && apt-get install -y gnupg
+RUN apt-key adv --refresh-keys --keyserver keyserver.ubuntu.com
 
 RUN apt update && apt install -y --no-install-recommends \
     unzip cmake git g++ make pkg-config libtool ca-certificates \
@@ -19,16 +25,18 @@ RUN git clone --branch 0.9.6 https://github.com/hoytech/strfry.git && \
 
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.80.1
 ENV PATH="/root/.cargo/bin:${PATH}"
+
 RUN rustc --version
 
 COPY ./event_deleter/Cargo.toml ./event_deleter/Cargo.lock /build/event_deleter/
+COPY ./event_deleter/src /build/event_deleter/src
 WORKDIR /build/event_deleter
 RUN cargo fetch
+RUN cargo build --release --bins --tests
 
-COPY ./event_deleter/src /build/event_deleter/src
-RUN cargo build --release
-RUN cargo test --release --no-run
-
+RUN ls /build/event_deleter
+RUN ls /build/event_deleter/target
+RUN find /build/event_deleter/target -type d
 RUN curl -fsSL https://deno.land/install.sh | sh
 ENV DENO_INSTALL="/root/.deno"
 ENV PATH="$DENO_INSTALL/bin:$PATH"
@@ -36,7 +44,7 @@ RUN echo "Deno is located at: $(which deno)"
 
 
 # Stage 2: tests
-FROM --platform=${PLATFORM} ubuntu:jammy AS tests
+FROM --platform=${BUILDPLATFORM} ubuntu:jammy AS tests
 
 RUN apt update && apt install -y --no-install-recommends \
     curl jq git g++ make pkg-config libtool ca-certificates \
@@ -75,7 +83,7 @@ RUN deno --version
 CMD ["run_tests.sh"]
 
 # Stage 3: runner
-FROM --platform=${PLATFORM} ubuntu:jammy AS runner
+FROM --platform=${BUILDPLATFORM} ubuntu:jammy AS runner
 
 RUN apt-get update && apt-get install -y --no-install-recommends  \
     vim curl jq ca-certificates \
@@ -99,7 +107,7 @@ WORKDIR /app
 
 COPY --from=build /build/strfry/strfry strfry
 COPY --from=build /build/event_deleter/target/release/spam_cleaner /usr/local/bin/spam_cleaner
-COPY --from=build /build/event_deleter/target/release/vanish_subscriber vanish_subscriber
+COPY --from=build /build/event_deleter/target/release/vanish_subscriber ./vanish_subscriber
 
 RUN chmod +x /usr/local/bin/spam_cleaner
 RUN chmod +x /app/vanish_subscriber
