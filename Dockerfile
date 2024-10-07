@@ -42,21 +42,32 @@ ENV DENO_INSTALL="/root/.deno"
 ENV PATH="$DENO_INSTALL/bin:$PATH"
 RUN echo "Deno is located at: $(which deno)"
 
+RUN curl -L https://github.com/fiatjaf/nak/releases/download/v0.7.6/nak-v0.7.6-linux-amd64 -o /usr/local/bin/nak && \
+    chmod +x /usr/local/bin/nak
+
+RUN curl -L https://github.com/IBM-Cloud/redli/releases/download/v0.13.0/redli_0.13.0_linux_amd64.tar.gz -o /tmp/redli.tar.gz && \
+    tar -xvf /tmp/redli.tar.gz -C /usr/local/bin/ redli_linux_amd64 && \
+    mv /usr/local/bin/redli_linux_amd64 /usr/local/bin/redli && \
+    chmod +x /usr/local/bin/redli
+
+RUN nak --version
+RUN redli --version
 
 # Stage 2: tests
 FROM --platform=${BUILDPLATFORM} ubuntu:jammy AS tests
+
+COPY --from=build /usr/local/bin/nak /usr/local/bin/nak
+RUN chmod +x /usr/local/bin/nak
 
 RUN apt update && apt install -y --no-install-recommends \
     curl jq git g++ make pkg-config libtool ca-certificates \
     libyaml-perl libtemplate-perl libregexp-grammars-perl libssl-dev zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
-RUN curl -L https://github.com/fiatjaf/nak/releases/download/v0.7.6/nak-v0.7.6-linux-amd64 -o /usr/local/bin/nak && \
-    chmod +x /usr/local/bin/nak
-
-RUN nak --version
-
+COPY ./push_vanish_request.ts /usr/local/bin/push_vanish_request.ts
 COPY ./run_integration_tests.sh /usr/local/bin/run_integration_tests.sh
+
+RUN chmod +x /usr/local/bin/push_vanish_request.ts
 RUN chmod +x /usr/local/bin/run_integration_tests.sh
 
 COPY --from=build /build/event_deleter/Cargo.toml /tests/event_deleter/
@@ -108,9 +119,17 @@ WORKDIR /app
 COPY --from=build /build/strfry/strfry strfry
 COPY --from=build /build/event_deleter/target/release/spam_cleaner /usr/local/bin/spam_cleaner
 COPY --from=build /build/event_deleter/target/release/vanish_subscriber ./vanish_subscriber
+COPY --from=build /usr/local/bin/nak /usr/local/bin/nak
+COPY --from=build /usr/local/bin/redli /usr/local/bin/redli
+COPY ./push_vanish_request.ts /app/push_vanish_request.ts
 
-RUN chmod +x /usr/local/bin/spam_cleaner
 RUN chmod +x /app/vanish_subscriber
+
+# Tools
+RUN chmod +x /usr/local/bin/nak
+RUN chmod +x /usr/local/bin/redli
+RUN chmod +x /usr/local/bin/spam_cleaner
+RUN chmod +x /app/push_vanish_request.ts
 
 COPY ./start.sh start.sh
 CMD ./start.sh

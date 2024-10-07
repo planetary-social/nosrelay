@@ -179,13 +179,18 @@ async fn process_stream_id(
     stream_id: &StreamId,
     deletion_sender: &mpsc::Sender<DeleteRequest>,
 ) -> Result<(), Box<dyn Error>> {
-    let vanish_request = DeleteRequest::try_from(stream_id).map_err(|e| {
-        error!(
-            "Failed to parse vanish request: {:?}. Error: {}",
-            stream_id, e
-        );
-        e
-    })?;
+    let vanish_request = match DeleteRequest::try_from(stream_id) {
+        Ok(vanish_request) => vanish_request,
+        Err(e) => {
+            // Log the error and continue processing the next stream id
+            error!(
+                "Couldn't process vanish request: {:?}. Error: {}",
+                stream_id, e
+            );
+
+            return Ok(());
+        }
+    };
 
     info!("Received vanish request: {:?}", vanish_request);
 
@@ -286,6 +291,10 @@ mod tests {
                             "content".to_string(),
                             redis::Value::BulkString("First message".into()),
                         ),
+                        (
+                            "tags".to_string(),
+                            redis::Value::BulkString("all_relays".into()),
+                        ),
                     ]),
                 }],
             }],
@@ -305,6 +314,10 @@ mod tests {
                         (
                             "content".to_string(),
                             redis::Value::BulkString("Second message".into()),
+                        ),
+                        (
+                            "tags".to_string(),
+                            redis::Value::BulkString("all_relays".into()),
                         ),
                     ]),
                 }],

@@ -1,49 +1,24 @@
 #!/bin/bash
 
-# Run Deno tests
-./strfry/plugins/tests/run_deno_tests.sh &
-DENOTEST_PID=$!
+run_test() {
+    local description="$1"
+    shift
+    echo "Running $description..."
 
-# Run Rust tests. In release mode to reuse the build cache.
-( cd ./event_deleter && cargo test --release --lib) &
-RUSTTEST_PID=$!
+    "$@"
+    local status=$?
 
-# Run Integration tests
-run_integration_tests.sh &
-INTEGRATIONTEST_PID=$!
+    if [ $status -ne 0 ]; then
+        echo "❌ $description failed with status code $status."
+        exit 1
+    else
+        echo "✅ $description passed."
+    fi
+}
 
-# Wait for Deno tests to finish and capture the status
-wait $DENOTEST_PID
-DENOTEST_STATUS=$?
+run_test "Integration Tests" run_integration_tests.sh
+run_test "Deno Tests" ./strfry/plugins/tests/run_deno_tests.sh
+run_test "Rust Tests" bash -c "cd ./event_deleter && cargo test --release --lib"
 
-# Wait for Rust tests to finish and capture the status
-wait $RUSTTEST_PID
-RUSTTEST_STATUS=$?
-
-# Wait for Integration tests to finish and capture the status
-wait $INTEGRATIONTEST_PID
-INTEGRATIONTEST_STATUS=$?
-
-# Kill any remaining background processes (optional, for cleanup)
-pkill -P $$
-
-# Check test statuses
-if [ $DENOTEST_STATUS -ne 0 ]; then
-    echo "Deno tests failed."
-fi
-
-if [ $RUSTTEST_STATUS -ne 0 ]; then
-    echo "Rust tests failed."
-fi
-
-if [ $INTEGRATIONTEST_STATUS -ne 0 ]; then
-    echo "Integration tests failed."
-fi
-
-# Exit with failure if any test failed
-if [ $DENOTEST_STATUS -ne 0 ] || [ $RUSTTEST_STATUS -ne 0 ] || [ $INTEGRATIONTEST_STATUS -ne 0 ]; then
-    exit 1
-else
-    echo "All tests passed."
-    exit 0
-fi
+echo "🎉 All tests passed successfully!"
+exit 0

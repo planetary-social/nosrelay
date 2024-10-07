@@ -1,6 +1,7 @@
 use nostr_sdk::prelude::*;
 use redis::{streams::StreamId, Value};
 use regex::Regex;
+use std::env;
 use std::fmt::Display;
 use std::sync::LazyLock;
 use thiserror::Error as ThisError;
@@ -12,6 +13,9 @@ static LOCAL_RELAY_URL: &str = "ws://localhost:7777";
 
 static REJECTED_NAME_REGEXES: LazyLock<Vec<Regex>> =
     LazyLock::new(|| vec![Regex::new(r".*Reply.*(Guy|Girl|Gal).*").unwrap()]);
+
+static RELAY_URL: LazyLock<String> =
+    LazyLock::new(|| env::var("RELAY_URL").expect("RELAY_URL must be set"));
 
 #[derive(Debug, Clone)]
 pub enum EventAnalysisResult {
@@ -42,6 +46,7 @@ impl TryFrom<&StreamId> for DeleteRequest {
     fn try_from(stream_id: &StreamId) -> Result<Self, Self::Error> {
         let mut reason = Option::<String>::None;
         let mut public_key = Option::<PublicKey>::None;
+        let mut has_matching_tag = false;
 
         for (key, value) in stream_id.map.iter() {
             match key.as_str() {
@@ -74,8 +79,24 @@ impl TryFrom<&StreamId> for DeleteRequest {
                         return Err(EventAnalysisError::ConversionError);
                     }
                 }
+                "tags" => {
+                    if let Value::BulkString(bytes) = value {
+                        let tags = String::from_utf8(bytes.clone())
+                            .map_err(|_| EventAnalysisError::ConversionError)?;
+
+                        has_matching_tag = tags.split(',').any(|tag| {
+                            tag.to_lowercase() == "all_relays" || tag.to_lowercase() == *RELAY_URL
+                        });
+                    }
+                }
                 _ => {}
             }
+        }
+
+        // We also filter the tag when we push to the stream, from the strfry
+        // delete command, but doesn't hurt to check here as well
+        if !has_matching_tag {
+            return Err(EventAnalysisError::NoMatchingTag);
         }
 
         match public_key {
@@ -244,4 +265,7 @@ pub enum EventAnalysisError {
 
     #[error("Not vanish kind")]
     NotVanishKindError,
+
+    #[error("No matching tag")]
+    NoMatchingTag,
 }
