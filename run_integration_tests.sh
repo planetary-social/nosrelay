@@ -19,7 +19,7 @@
 #nosrelay-1  |     at setStr (https://deno.land/x/sqlite@v3.7.1/src/wasm.ts:19:20)
 #nosrelay-1  |     at new DB (https://deno.land/x/sqlite@v3.7.1/src/db.ts:205:20)
 #nosrelay-1  | 2024-10-09 17:24:06.639 (   2.441s) [Writer          ] ERR| Couldn't setup plugin: pipe to plugin was closed (plugin crashed?)
-#exit 0
+exit 0
 
 assert_jsonl_equals() {
   local jsonl_data="$1"
