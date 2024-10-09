@@ -8,6 +8,14 @@ import { readLines } from "https://deno.land/std@0.171.0/io/mod.ts";
 // Redis. Using deno to avoid any discrepancy vs the strfry policy.  The script
 // pushed an unsigned request so that we can do it based on out of band
 // requests, not using the nostr network.
+// The script assumes is being run locally from within the relay container so it
+// expects that both REDIS_URL and RELAY_URL are set in the environment.
+//
+// Example usage:
+//
+//./push_vanish_request.ts -p 79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81234 -r 'Requested through email from trusted user'
+//
+// The script asks for confirmation before pushing the request to the stream.
 
 const args = parse(Deno.args, {
   alias: {
