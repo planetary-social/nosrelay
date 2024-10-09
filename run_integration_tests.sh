@@ -1,26 +1,5 @@
 #!/bin/bash
 
-# Disable integration tests for the moment to debug error:
-# See https://github.com/planetary-social/nosrelay/actions/runs/11259467822/job/31309644214
-#nosrelay-1  | Download https://deno.land/std@0.88.0/async/pool.ts
-#nosrelay-1  | Download https://deno.land/std@0.88.0/fmt/colors.ts
-#nosrelay-1  | Download https://deno.land/std@0.88.0/testing/_diff.ts
-#nosrelay-1  | error: Uncaught (in promise) TypeError: Deno.seekSync is not a function
-#nosrelay-1  |       Deno.seekSync(rid, offset, Deno.SeekMode.Start);
-#nosrelay-1  |            ^
-#nosrelay-1  |     at js_read (https://deno.land/x/sqlite@v3.7.1/build/vfs.js:48:12)
-#nosrelay-1  |     at <anonymous> (wasm://wasm/0027cea2:1:5885)
-#nosrelay-1  |     at <anonymous> (wasm://wasm/0027cea2:1:145143)
-#nosrelay-1  |     at <anonymous> (wasm://wasm/0027cea2:1:140310)
-#nosrelay-1  |     at <anonymous> (wasm://wasm/0027cea2:1:146451)
-#nosrelay-1  |     at <anonymous> (wasm://wasm/0027cea2:1:3856)
-#nosrelay-1  |     at <anonymous> (wasm://wasm/0027cea2:1:602396)
-#nosrelay-1  |     at https://deno.land/x/sqlite@v3.7.1/src/db.ts:208:27
-#nosrelay-1  |     at setStr (https://deno.land/x/sqlite@v3.7.1/src/wasm.ts:19:20)
-#nosrelay-1  |     at new DB (https://deno.land/x/sqlite@v3.7.1/src/db.ts:205:20)
-#nosrelay-1  | 2024-10-09 17:24:06.639 (   2.441s) [Writer          ] ERR| Couldn't setup plugin: pipe to plugin was closed (plugin crashed?)
-#exit 0
-
 assert_jsonl_equals() {
   local jsonl_data="$1"
   local expected_data="$2"
