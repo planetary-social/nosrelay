@@ -45,7 +45,7 @@ jobs:
     name: Build and Push Docker image
     needs: test
     runs-on: ubuntu-latest
-    if: ${{ github.ref == 'refs/heads/main' && needs.test.result == 'success' }}
+    if: ${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/news') && needs.test.result == 'success' }}
     permissions:
       packages: write
       contents: read
