@@ -38,7 +38,7 @@ RUN ls /build/event_deleter
 RUN ls /build/event_deleter/target
 RUN find /build/event_deleter/target -type d
 ENV DENO_VERSION=v1.46.3
-RUN curl -fsSL https://deno.land/install.sh | sh
+RUN DENO_VERSION=v1.46.3 curl -fsSL https://deno.land/install.sh | sh
 ENV DENO_INSTALL="/root/.deno"
 ENV PATH="$DENO_INSTALL/bin:$PATH"
 RUN echo "Deno is located at: $(which deno)"
