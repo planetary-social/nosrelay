@@ -10,6 +10,7 @@ use std::error::Error;
 use std::{env, sync::LazyLock};
 use tokio::signal::unix::{signal, SignalKind};
 use tokio::sync::mpsc;
+use tokio_rustls::rustls::crypto::ring;
 use tokio_util::{sync::CancellationToken, task::TaskTracker};
 use tracing::info;
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
@@ -36,6 +37,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .with(fmt::layer())
         .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")))
         .init();
+
+    ring::default_provider()
+        .install_default()
+        .expect("Failed to install ring crypto provider");
 
     let args = Args::parse();
     let tracker = TaskTracker::new();
