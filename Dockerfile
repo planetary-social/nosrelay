@@ -1,5 +1,5 @@
 # Stage 1: Build
-#ARG BUILDPLATFORM=linux/amd64
+ARG BUILDPLATFORM=linux/amd64
 
 FROM --platform=$BUILDPLATFORM ubuntu:jammy AS build
 
