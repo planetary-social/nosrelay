@@ -71,8 +71,8 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=ref,event=branch,suffix=_{{ github.sha }}
-            type=raw,value=latest,enable={{ github.ref == 'refs/heads/main' }}
+            type=ref,event=branch,suffix=_{{sha}}
+            type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push Docker image. The build was cached
         uses: docker/build-push-action@v5
