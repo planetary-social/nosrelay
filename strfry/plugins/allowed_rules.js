@@ -20,10 +20,11 @@ const ALLOWED = {
     5, // Delete
     6, // Reposts
     7, // Likes
+    62, // Vanish request
     1984, // Notes
     1059, // Gift wrap messages
     10002, // Relay list metadata
-    30023, // Long-form 
+    30023, // Long-form
   ],
 };
 
