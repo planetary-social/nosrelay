@@ -1,15 +1,18 @@
 use clap::Parser;
-use nostr_sdk::Event;
-use serde_json::Deserializer;
-use spam_filter::{
+use event_deleter::{
     analyzer_worker::ValidationWorker,
     deletion_task::spawn_deletion_task,
-    event_analyzer::{RejectReason, Validator},
+    event_analyzer::{DeleteRequest, Validator},
+    relay_commander,
     worker_pool::WorkerPool,
 };
+use nonzero_ext::nonzero;
+use nostr_sdk::Event;
+use serde_json::Deserializer;
 use std::error::Error;
 use std::io;
-use std::num::NonZeroUsize;
+use std::num::NonZeroU16;
+use std::num::NonZeroU64;
 use tokio::sync::mpsc;
 use tokio_util::{sync::CancellationToken, task::TaskTracker};
 use tracing::{debug, error, info};
@@ -24,16 +27,16 @@ use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 // Leave the comments, they are used for the --help message
 struct Args {
     /// Buffer size for batching delete commands
-    #[arg(short, long, default_value_t = 10)]
-    buffer_size: usize,
+    #[arg(short, long, default_value_t = nonzero!(10u16))]
+    buffer_size: NonZeroU16,
 
     /// Maximum number of concurrent validation tasks
-    #[arg(short = 'c', long, default_value_t = 10)]
-    concurrency_limit: usize,
+    #[arg(short = 'c', long, default_value_t = nonzero!(10u16))]
+    concurrency_limit: NonZeroU16,
 
     /// Timeout (in seconds) for validating each event
-    #[arg(short = 't', long, default_value_t = 10)]
-    validation_timeout: u64,
+    #[arg(short = 't', long, default_value_t = nonzero!(10u64))]
+    validation_timeout: NonZeroU64,
 
     /// Dry run mode. If set, events will not be deleted
     #[arg(short = 'd', long)]
@@ -67,7 +70,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     });
 
     let (validation_sender, validation_receiver) = mpsc::channel::<Event>(100);
-    let (deletion_sender, deletion_receiver) = mpsc::channel::<RejectReason>(100);
+    let (deletion_sender, deletion_receiver) = mpsc::channel::<DeleteRequest>(100);
 
     let validator = Validator::new().await?;
     let validator_worker =
@@ -77,17 +80,24 @@ async fn main() -> Result<(), Box<dyn Error>> {
     WorkerPool::start(
         &tracker,
         "validation_pool",
-        NonZeroUsize::new(args.concurrency_limit)
-            .expect("concurrency_limit must be greater than zero"),
-        NonZeroUsize::new(args.validation_timeout as usize)
-            .expect("validation_timeout must be greater than zero"),
+        args.concurrency_limit,
+        args.validation_timeout,
         validation_receiver,
         cancellation_token.clone(),
         validator_worker,
     );
 
+    let relay_commander = relay_commander::RelayCommander::default();
+
     // Spawn the deletion task with dry_run flag
-    spawn_deletion_task(&tracker, deletion_receiver, args.buffer_size, args.dry_run);
+    spawn_deletion_task(
+        &tracker,
+        deletion_receiver,
+        None,
+        relay_commander,
+        args.buffer_size,
+        args.dry_run,
+    );
 
     tracker.close();
 

@@ -12,6 +12,7 @@ const ALLOWED = {
     5, // Event deletion
     6, // Repost
     7, // Reaction
+    62, // Request to Vanish
     1059, // Gift wrap messages
     1984, // Reports
     10000, // Mute list
@@ -29,7 +30,11 @@ const DISALLOWED = {
 const nosPolicy: Policy<void> = (msg) => {
   const event = msg.event;
   const content = event.content;
-  let res = { id: event.id, action: "reject", msg: "blocked: not authorized" };
+  let res = {
+    id: event.id,
+    action: "reject",
+    msg: "blocked: not authorized",
+  };
 
   const isAllowedPub = ALLOWED.pubs.hasOwnProperty(event.pubkey);
   const isAllowedEventKind = ALLOWED.eventKinds.includes(event.kind);

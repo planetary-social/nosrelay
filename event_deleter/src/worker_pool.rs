@@ -1,6 +1,7 @@
+use std::error::Error;
 use std::fmt::Debug;
+use std::num::{NonZeroU16, NonZeroU64};
 use std::sync::Arc;
-use std::{error::Error, num::NonZeroUsize};
 use tokio::sync::mpsc::{self, Sender};
 use tokio::time::{timeout, Duration};
 use tokio_util::sync::CancellationToken;
@@ -16,8 +17,8 @@ impl WorkerPool {
     pub fn start<Item, Worker>(
         tracker: &TaskTracker,
         pool_name: &str,
-        num_workers: NonZeroUsize,
-        worker_timeout_secs: NonZeroUsize,
+        num_workers: NonZeroU16,
+        worker_timeout_secs: NonZeroU64,
         item_receiver: mpsc::Receiver<Item>,
         cancellation_token: CancellationToken,
         worker: Worker,
@@ -111,10 +112,10 @@ fn create_dispatcher_task<Item>(
 fn create_worker_task<Item, Worker>(
     tracker: &TaskTracker,
     pool_name: String,
-    worker_timeout_secs: NonZeroUsize,
+    worker_timeout_secs: NonZeroU64,
     mut worker_rx: mpsc::Receiver<Item>,
     worker: Arc<Worker>,
-    worker_index: usize,
+    worker_index: u16,
 ) where
     Item: Debug + Send + Sync + Clone + 'static,
     Worker: WorkerTask<Item> + Send + Sync + 'static,
@@ -131,7 +132,7 @@ fn create_worker_task<Item, Worker>(
                         }
                         Some(item) => {
                             trace!("{}: Worker task processing item {:?}", worker_name, item);
-                            let result = timeout(Duration::from_secs(worker_timeout_secs.get() as u64), worker.call(item)).await;
+                            let result = timeout(Duration::from_secs(worker_timeout_secs.get()), worker.call(item)).await;
 
                             match result {
                                 Ok(Ok(())) => {
