@@ -1,18 +1,34 @@
 use crate::event_analyzer::DeleteRequest;
 use async_trait::async_trait;
 use redis::{
+    aio::ConnectionManager,
     streams::{StreamId, StreamKey, StreamReadOptions, StreamReadReply},
     AsyncCommands, RedisError,
 };
 use std::error::Error;
 use std::sync::Arc;
+use std::{env, sync::LazyLock};
 use tokio::sync::mpsc;
 use tokio_util::{sync::CancellationToken, task::TaskTracker};
 use tracing::{debug, error, info};
+use url::Url;
 
 static BLOCK_MILLIS: usize = 5000;
 static VANISH_STREAM_KEY: &str = "vanish_requests";
-static VANISH_LAST_ID_KEY: &str = "vanish_requests:deletion_subscriber:last_id";
+static RELAY_URL: LazyLock<String> =
+    LazyLock::new(|| env::var("RELAY_URL").expect("RELAY_URL must be set"));
+static VANISH_LAST_ID_KEY: LazyLock<String> = LazyLock::new(|| {
+    let url = Url::parse(&*RELAY_URL).expect("Invalid RELAY_URL format");
+    let sanitized_url = url
+        .host_str()
+        .expect("RELAY_URL must have a host")
+        .to_string();
+
+    format!(
+        "vanish_requests:deletion_subscriber:last_id:{}",
+        sanitized_url
+    )
+});
 
 pub struct RedisClient {
     client: redis::Client,
@@ -21,7 +37,7 @@ pub struct RedisClient {
 #[async_trait]
 pub trait RedisClientTrait: Send + Sync + 'static {
     type Connection: RedisClientConnectionTrait;
-    async fn get_multiplexed_async_connection(&self) -> Result<Self::Connection, RedisError>;
+    async fn get_connection(&self) -> Result<Self::Connection, RedisError>;
 }
 
 impl RedisClient {
@@ -34,14 +50,14 @@ impl RedisClient {
 #[async_trait]
 impl RedisClientTrait for RedisClient {
     type Connection = RedisClientConnection;
-    async fn get_multiplexed_async_connection(&self) -> Result<Self::Connection, RedisError> {
-        let con = self.client.get_multiplexed_async_connection().await?;
+    async fn get_connection(&self) -> Result<Self::Connection, RedisError> {
+        let con = self.client.get_connection_manager().await?;
         Ok(RedisClientConnection { con })
     }
 }
 
 pub struct RedisClientConnection {
-    con: redis::aio::MultiplexedConnection,
+    con: ConnectionManager,
 }
 
 #[async_trait]
@@ -101,9 +117,10 @@ pub async fn spawn_vanish_subscriber<T: RedisClientTrait>(
 
                 if id > last_id {
                     let save_last_id_result: Result<(), RedisError> =
-                        con.set(VANISH_LAST_ID_KEY, last_id.clone()).await;
+                        con.set(&VANISH_LAST_ID_KEY, last_id.clone()).await;
 
                     if let Err(e) = save_last_id_result {
+                        //Failed to save last id: broken pipe
                         error!("Failed to save last id: {}", e);
                     } else {
                         info!("Updating last vanish stream id processed to {}", last_id);
@@ -167,9 +184,9 @@ pub async fn spawn_vanish_subscriber<T: RedisClientTrait>(
 async fn get_connection_and_last_id<T: RedisClientTrait>(
     redis_client: Arc<T>,
 ) -> Result<(T::Connection, String), RedisError> {
-    let mut con = redis_client.get_multiplexed_async_connection().await?;
+    let mut con = redis_client.get_connection().await?;
     let last_id = con
-        .get(VANISH_LAST_ID_KEY)
+        .get(&VANISH_LAST_ID_KEY)
         .await
         .unwrap_or_else(|_| "0-0".to_string());
     Ok((con, last_id))
@@ -262,7 +279,7 @@ mod tests {
     #[async_trait::async_trait]
     impl RedisClientTrait for MockRedisClient {
         type Connection = MockRedisClientConnection;
-        async fn get_multiplexed_async_connection(&self) -> Result<Self::Connection, RedisError> {
+        async fn get_connection(&self) -> Result<Self::Connection, RedisError> {
             Ok(MockRedisClientConnection {
                 last_id: self.last_id.clone(),
                 stream_ids_sequence: self.stream_ids_sequence.clone(),
