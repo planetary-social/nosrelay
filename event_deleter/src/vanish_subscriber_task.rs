@@ -75,11 +75,17 @@ pub trait RedisClientConnectionTrait: Send + Sync + 'static {
 #[async_trait]
 impl RedisClientConnectionTrait for RedisClientConnection {
     async fn get(&mut self, key: &str) -> Result<String, RedisError> {
-        self.con.get(key).await
+        match self.con.get(key).await {
+            Ok(value) => Ok(value),
+            Err(_) => self.con.get(key).await,
+        }
     }
 
     async fn set(&mut self, key: &str, value: String) -> Result<(), RedisError> {
-        self.con.set(key, value).await
+        match self.con.set(key, value.clone()).await {
+            Ok(()) => Ok(()),
+            Err(_) => self.con.set(key, value).await,
+        }
     }
 
     async fn xread_options(
@@ -88,7 +94,10 @@ impl RedisClientConnectionTrait for RedisClientConnection {
         ids: &[String],
         opts: &StreamReadOptions,
     ) -> Result<StreamReadReply, RedisError> {
-        self.con.xread_options(keys, ids, opts).await
+        match self.con.xread_options(keys, ids, opts).await {
+            Ok(reply) => Ok(reply),
+            Err(_) => self.con.xread_options(keys, ids, opts).await,
+        }
     }
 }
 
