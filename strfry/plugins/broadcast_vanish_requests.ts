@@ -5,6 +5,7 @@ import type {
 import { log } from "https://raw.githubusercontent.com/planetary-social/strfry-policies/refs/heads/nos-changes/mod.ts";
 import { PubkeyCache } from "./pubkey_cache.ts";
 
+// https://github.com/vitorpamplona/nips/blob/right-to-vanish/62.md
 const REQUEST_TO_VANISH_KIND = 62;
 const VANISH_STREAM_KEY = "vanish_requests";
 
