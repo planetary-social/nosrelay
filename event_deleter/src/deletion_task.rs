@@ -168,6 +168,7 @@ mod tests {
                 CommandExpectation {
                     expected_ids: Some(BTreeSet::from([event_id])),
                     expected_authors: None,
+                    expected_pubkeys: None,
                 },
                 CommandExpectation {
                     expected_ids: None,
@@ -175,6 +176,12 @@ mod tests {
                         forbidden_public_key,
                         vanish_public_key,
                     ])),
+                    expected_pubkeys: None,
+                },
+                CommandExpectation {
+                    expected_ids: None,
+                    expected_authors: None,
+                    expected_pubkeys: Some(BTreeSet::from([vanish_public_key])),
                 },
             ],
         );
@@ -189,6 +196,7 @@ mod tests {
     struct CommandExpectation {
         expected_ids: Option<BTreeSet<EventId>>,
         expected_authors: Option<BTreeSet<PublicKey>>,
+        expected_pubkeys: Option<BTreeSet<PublicKey>>,
     }
 
     fn assert_executed_deletes(
@@ -199,10 +207,23 @@ mod tests {
         let executed = executed_deletes.lock().unwrap();
         assert_eq!(executed.len(), expected_commands.len());
 
+        const P_TAG: SingleLetterTag = SingleLetterTag::lowercase(Alphabet::P);
         for (command_run, expectation) in executed.iter().zip(expected_commands.iter()) {
+            let pubkeys = if let Some(p_tag) = command_run.filter.generic_tags.get(&P_TAG) {
+                Some(
+                    p_tag
+                        .iter()
+                        .filter_map(|p| PublicKey::from_hex(p).ok())
+                        .collect::<BTreeSet<_>>(),
+                )
+            } else {
+                None
+            };
+
             assert_eq!(command_run.dry_run, expected_dry_run);
             assert_eq!(&command_run.filter.ids, &expectation.expected_ids);
             assert_eq!(&command_run.filter.authors, &expectation.expected_authors);
+            assert_eq!(pubkeys, expectation.expected_pubkeys);
         }
     }
 

@@ -25,7 +25,10 @@ const redis_connect_options = parseURL(redis_url);
 const redis = await connect(redis_connect_options);
 
 const relay_url = Deno.env.get("RELAY_URL");
-const broadcastVanishRequests = createBroadcastVanishRequests(redis, relay_url);
+const broadcastVanishRequests = await createBroadcastVanishRequests(
+  redis,
+  relay_url
+);
 
 // Policies that reject faster should be at the top. So synchronous policies should be at the top.
 const policies = [
