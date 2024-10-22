@@ -50,6 +50,10 @@ class RedisMock {
   }
 }
 
+async function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 Deno.test({
   name: "pushes a vanish request and then shadowRejects on duplicate pubkey",
   fn: async () => {
@@ -86,6 +90,9 @@ Deno.test({
     const result2 = await broadcastVanishRequests(msg);
     assertEquals(result2.action, "shadowReject");
     assertEquals(redisMock.called, false);
+
+    // Some time to let the logs flush
+    await wait(100);
   },
   sanitizeResources: false,
 });
@@ -125,6 +132,9 @@ Deno.test({
 
     const result2 = await broadcastVanishRequests(msg);
     assertEquals(result2.action, "shadowReject");
+
+    // Some time to let the logs flush
+    await wait(100);
     assertEquals(redisMock.called, false);
   },
   sanitizeResources: false,
@@ -160,6 +170,10 @@ Deno.test({
 
     const result2 = await broadcastVanishRequests(msg);
     assertEquals(result2.action, "accept");
+    assertEquals(redisMock.called, false);
+
+    // Some time to let the logs flush
+    await wait(100);
     assertEquals(redisMock.called, false);
   },
   sanitizeResources: false,
@@ -199,6 +213,10 @@ Deno.test({
     const result2 = await broadcastVanishRequests(msg);
     assertEquals(result2.action, "accept");
     assertEquals(redisMock.called, false);
+
+    // Some time to let the logs flush
+    await wait(100);
+    assertEquals(redisMock.called, false);
   },
   sanitizeResources: false,
 });
@@ -234,6 +252,10 @@ Deno.test({
     // Since the pubkey is pre-loaded, it should shadowReject
     const result = await broadcastVanishRequests(msg);
     assertEquals(result.action, "shadowReject");
+    assertEquals(redisMock.called, false);
+
+    // Some time to let the logs flush
+    await wait(100);
     assertEquals(redisMock.called, false);
   },
   sanitizeResources: false,
