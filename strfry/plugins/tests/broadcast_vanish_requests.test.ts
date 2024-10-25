@@ -55,7 +55,7 @@ async function wait(ms: number): Promise<void> {
 }
 
 Deno.test({
-  name: "pushes a vanish request and then shadowRejects on duplicate pubkey",
+  name: "pushes a vanish request and then rejects on duplicate pubkey",
   fn: async () => {
     const pubkey = "pubkey123";
     const msg = buildInputMessage({
@@ -88,7 +88,7 @@ Deno.test({
     redisMock.called = false;
 
     const result2 = await broadcastVanishRequests(msg);
-    assertEquals(result2.action, "shadowReject");
+    assertEquals(result2.action, "reject");
     assertEquals(redisMock.called, false);
 
     // Some time to let the logs flush
@@ -98,7 +98,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "pushes a vanish request with specific relay filter and then shadowRejects on duplicate pubkey",
+  name: "pushes a vanish request with specific relay filter and then rejects on duplicate pubkey",
   fn: async () => {
     const pubkey = "pubkey456";
     const msg = buildInputMessage({
@@ -131,7 +131,7 @@ Deno.test({
     redisMock.called = false;
 
     const result2 = await broadcastVanishRequests(msg);
-    assertEquals(result2.action, "shadowReject");
+    assertEquals(result2.action, "reject");
 
     // Some time to let the logs flush
     await wait(100);
@@ -222,7 +222,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "shadowRejects when pubkey is pre-loaded in cache",
+  name: "rejects when pubkey is pre-loaded in cache",
   fn: async () => {
     const pubkey = "vanishedPubkey";
     const redisMock = new RedisMock();
@@ -249,9 +249,9 @@ Deno.test({
       pubkeyCache
     );
 
-    // Since the pubkey is pre-loaded, it should shadowReject
+    // Since the pubkey is pre-loaded, it should reject it
     const result = await broadcastVanishRequests(msg);
-    assertEquals(result.action, "shadowReject");
+    assertEquals(result.action, "reject");
     assertEquals(redisMock.called, false);
 
     // Some time to let the logs flush

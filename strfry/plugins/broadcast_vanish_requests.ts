@@ -39,8 +39,8 @@ async function createBroadcastVanishRequests(
     if (cache.has(pubkey)) {
       return {
         id: event.id,
-        action: "shadowReject",
-        msg: "",
+        action: "reject",
+        msg: "invalid: vanished pubkey",
       } as OutputMessage;
     }
 
