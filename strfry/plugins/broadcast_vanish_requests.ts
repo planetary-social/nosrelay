@@ -3,14 +3,19 @@ import type {
   OutputMessage,
 } from "https://raw.githubusercontent.com/planetary-social/strfry-policies/refs/heads/nos-changes/mod.ts";
 import { log } from "https://raw.githubusercontent.com/planetary-social/strfry-policies/refs/heads/nos-changes/mod.ts";
+import { PubkeyCache } from "./pubkey_cache.ts";
 
+// https://github.com/vitorpamplona/nips/blob/right-to-vanish/62.md
 const REQUEST_TO_VANISH_KIND = 62;
 const VANISH_STREAM_KEY = "vanish_requests";
 
-function createBroadcastVanishRequests(
+const CACHE_MAX_SIZE = 1_000_000;
+
+async function createBroadcastVanishRequests(
   redis: any,
-  relay_url: string
-): Policy<void> {
+  relay_url: string,
+  vanishedPubkeyCache?: PubkeyCache
+): Promise<Policy<void>> {
   if (!redis) {
     throw new Error("REDIS_URL environment variable is not set.");
   }
@@ -19,8 +24,26 @@ function createBroadcastVanishRequests(
     throw new Error("RELAY_URL environment variable is not set.");
   }
 
+  let cache: PubkeyCache;
+  if (!vanishedPubkeyCache) {
+    cache = new PubkeyCache(redis, CACHE_MAX_SIZE);
+    await cache.initialize();
+  } else {
+    cache = vanishedPubkeyCache;
+  }
+
   return async (msg) => {
     const event = msg.event;
+    const pubkey = event.pubkey;
+
+    if (cache.has(pubkey)) {
+      return {
+        id: event.id,
+        action: "reject",
+        msg: "invalid: vanished pubkey",
+      } as OutputMessage;
+    }
+
     const accept: OutputMessage = {
       id: event.id,
       action: "accept",
@@ -41,6 +64,7 @@ function createBroadcastVanishRequests(
     }
 
     await broadcastVanishRequest(event, redis);
+    await cache.add(pubkey);
 
     return accept;
   };
@@ -54,7 +78,7 @@ async function broadcastVanishRequest(event: any, redis: any) {
   try {
     await redis.xadd(VANISH_STREAM_KEY, "*", event);
   } catch (error) {
-    log(`Failed to push request  ${event.id} to Redis Stream: ${error}`);
+    log(`Failed to push request ${event.id} to Redis Stream: ${error}`);
   }
 }
 

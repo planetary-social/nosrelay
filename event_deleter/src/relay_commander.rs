@@ -31,6 +31,7 @@ impl<T: RawCommanderTrait> RelayCommander<T> {
     ) -> Result<(), Box<dyn Error>> {
         let mut ids = HashSet::new();
         let mut authors = HashSet::new();
+        let mut gift_wrap_pubkeys = HashSet::new();
 
         for reason in delete_reason {
             match reason {
@@ -42,6 +43,7 @@ impl<T: RawCommanderTrait> RelayCommander<T> {
                 }
                 DeleteRequest::Vanish(_, pubkey, _) => {
                     authors.insert(pubkey);
+                    gift_wrap_pubkeys.insert(pubkey);
                 }
             }
         }
@@ -54,9 +56,18 @@ impl<T: RawCommanderTrait> RelayCommander<T> {
         }
 
         if !authors.is_empty() {
-            let authors_filter = Filter::new().authors(authors);
+            let authors_filter = Filter::new().authors(authors.clone());
             self.raw_commander
                 .delete_from_filter(authors_filter, dry_run)
+                .await?;
+        }
+
+        if !gift_wrap_pubkeys.is_empty() {
+            let gift_wrap_filter = Filter::new()
+                .kind(Kind::GiftWrap)
+                .pubkeys(gift_wrap_pubkeys);
+            self.raw_commander
+                .delete_from_filter(gift_wrap_filter, dry_run)
                 .await?;
         }
 
