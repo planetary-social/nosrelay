@@ -18,6 +18,7 @@ const ALLOWED = {
     10000, // Mute list
     10002, // Relay list metadata
     30023, // Long-form Content
+    30402, // Classified listings
   ],
 };
 
