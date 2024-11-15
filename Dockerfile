@@ -16,7 +16,7 @@ RUN apt update && apt install -y --no-install-recommends \
     libyaml-perl libtemplate-perl libregexp-grammars-perl libssl-dev zlib1g-dev \
     liblmdb-dev libflatbuffers-dev libsecp256k1-dev libzstd-dev curl build-essential
 
-RUN git clone --branch 0.9.6 https://github.com/hoytech/strfry.git && \
+RUN git clone --depth 1 --branch 1.0.3 https://github.com/hoytech/strfry.git && \
     cd strfry/ && \
     git submodule update --init && \
     make setup-golpe && \
