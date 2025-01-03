@@ -27,7 +27,6 @@ const policies = [
   // Async policies
   [antiDuplicationPolicy, { ttl: 60000, minLength: 50 }],
   [rateLimitPolicy, { whitelist: [localhost] }],
-  broadcastVanishRequests,
 ];
 
 for await (const msg of readStdin()) {
