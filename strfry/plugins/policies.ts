@@ -47,7 +47,7 @@ const policies = [
       max: 20,
       interval: one_minute,
       banInterval: two_days,
-      whitelist: [localhost, eventsIp, "167.58.194.41"],
+      whitelist: [localhost, eventsIp],
       // We use a different db url so that this limiter is not affected by the other limiters.
       // The file is stored in the strfry-db folder for persistence between restarts.
       databaseUrl:
@@ -62,7 +62,7 @@ const policies = [
     {
       max: 10,
       interval: one_minute,
-      whitelist: [localhost, eventsIp, "167.58.194.41"],
+      whitelist: [localhost, eventsIp],
     },
   ],
 
