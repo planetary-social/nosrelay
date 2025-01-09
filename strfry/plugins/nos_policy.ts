@@ -1,4 +1,4 @@
-import type { Policy } from "https://gitlab.com/soapbox-pub/strfry-policies/-/raw/develop/mod.ts";
+import type { Policy } from "https://raw.githubusercontent.com/planetary-social/strfry-policies/refs/heads/nos-changes/mod.ts";
 
 const ALLOWED = {
   pubs: {
@@ -29,7 +29,9 @@ const ALLOWED = {
     5, // Event deletion
     6, // Repost
     7, // Reaction
+    62, // Request to Vanish
     1059, // Gift wrap messages
+    1984, // Reports
     10000, // Mute list
     10002, // Relay list metadata
     30023, // Long-form Content
@@ -45,7 +47,11 @@ const DISALLOWED = {
 const nosPolicy: Policy<void> = (msg) => {
   const event = msg.event;
   const content = event.content;
-  let res = { id: event.id, action: "reject", msg: "blocked: not authorized" };
+  let res = {
+    id: event.id,
+    action: "reject",
+    msg: "blocked: not authorized",
+  };
 
   const isAllowedPub = ALLOWED.pubs.hasOwnProperty(event.pubkey);
   const isAllowedEventKind = ALLOWED.eventKinds.includes(event.kind);
@@ -56,6 +62,12 @@ const nosPolicy: Policy<void> = (msg) => {
   if (!isDisallowed && isAllowedEventKind && isAllowedPub) {
     res.action = "accept";
     res.msg = "";
+
+    return res;
+  }
+
+  if (!isAllowedEventKind) {
+    res.msg = "blocked: kind not allowed";
   }
 
   return res;
