@@ -132,4 +132,8 @@ RUN chmod +x /usr/local/bin/spam_cleaner
 RUN chmod +x /app/push_vanish_request.ts
 
 COPY ./start.sh start.sh
+
+HEALTHCHECK --interval=1h --timeout=5s --start-period=10s \
+  CMD nak req -l 1 localhost:7777 | jq -e '.created_at as $ts | ($ts > (now | floor - 86400))' || exit 1
+
 CMD ./start.sh

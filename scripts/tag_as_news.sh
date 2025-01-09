@@ -7,6 +7,6 @@ if [ -z "$SOURCE" ]; then
   exit 1
 fi
 
-docker pull --platform linux/amd64 ghcr.io/planetary-social/nosrelay:$SOURCE && \
-docker tag ghcr.io/planetary-social/nosrelay:$SOURCE ghcr.io/planetary-social/nosrelay:news && \
+docker pull --platform linux/amd64 ghcr.io/planetary-social/nosrelay@sha256:$SOURCE && \
+docker tag ghcr.io/planetary-social/nosrelay@sha256:$SOURCE ghcr.io/planetary-social/nosrelay:news && \
 docker push ghcr.io/planetary-social/nosrelay:news
