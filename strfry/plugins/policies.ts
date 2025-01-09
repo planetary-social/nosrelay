@@ -13,6 +13,7 @@ import { createBroadcastVanishRequests } from "./broadcast_vanish_requests.ts";
 import { connect, parseURL } from "https://deno.land/x/redis/mod.ts";
 
 const localhost = "127.0.0.1";
+const sync_server = "159.65.45.194"; // sync.nos.social
 const redis_url = Deno.env.get("REDIS_URL");
 const redis_connect_options = parseURL(redis_url);
 const redis = await connect(redis_connect_options);
@@ -26,7 +27,7 @@ const policies = [
   [hellthreadPolicy, { limit: 100 }],
   // Async policies
   [antiDuplicationPolicy, { ttl: 60000, minLength: 50 }],
-  [rateLimitPolicy, { whitelist: [localhost] }],
+  [rateLimitPolicy, { whitelist: [localhost, sync_server] }],
   broadcastVanishRequests,
 ];
 
