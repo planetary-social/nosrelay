@@ -14,7 +14,7 @@ import { connect, parseURL } from "https://deno.land/x/redis/mod.ts";
 
 const localhost = "127.0.0.1";
 const eventsIp = await getEventsIp();
-
+const syncIp = await getSyncIp();
 const one_minute = 60 * 1000;
 const one_hour = 60 * one_minute;
 const one_day = 24 * one_hour;
@@ -47,7 +47,7 @@ const policies = [
       max: 20,
       interval: one_minute,
       banInterval: two_days,
-      whitelist: [localhost, eventsIp],
+      whitelist: [localhost, eventsIp, syncIp],
       // We use a different db url so that this limiter is not affected by the other limiters.
       // The file is stored in the strfry-db folder for persistence between restarts.
       databaseUrl:
@@ -62,7 +62,7 @@ const policies = [
     {
       max: 10,
       interval: one_minute,
-      whitelist: [localhost, eventsIp],
+      whitelist: [localhost, eventsIp, syncIp],
     },
   ],
 
@@ -83,5 +83,16 @@ async function getEventsIp() {
     return resolvedIps[0];
   } catch (error) {
     return fallbackEventsIp;
+  }
+}
+
+async function getSyncIp() {
+  const fallbackSyncIp = "159.65.45.194";
+
+  try {
+    const resolvedIps = await Deno.resolveDns("sync.nos.social", "A");
+    return resolvedIps[0];
+  } catch (error) {
+    return fallbackSyncIp;
   }
 }
