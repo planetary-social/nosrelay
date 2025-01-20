@@ -17,6 +17,7 @@ const ALLOWED = {
     1984, // Reports
     10000, // Mute list
     10002, // Relay list metadata
+    30000, // Follow Set
     30023, // Long-form Content
   ],
 };
