@@ -133,7 +133,7 @@ RUN chmod +x /app/push_vanish_request.ts
 
 COPY ./start.sh start.sh
 
-HEALTHCHECK --interval=1h --timeout=5s --start-period=10s \
-  CMD nak req -l 1 localhost:7777 | jq -e '.created_at as $ts | ($ts > (now | floor - 86400))' || exit 1
+HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
+  CMD curl -fSsI http://localhost:7777/ || exit 1
 
 CMD ./start.sh
