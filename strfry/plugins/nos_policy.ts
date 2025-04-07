@@ -19,6 +19,8 @@ const ALLOWED = {
     10002, // Relay list metadata
     30000, // Follow Set
     30023, // Long-form Content
+    31989, // Nip 89: Recommendation event
+    31990, // Nip 89: Handler information
   ],
 };
 
