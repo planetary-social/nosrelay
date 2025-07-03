@@ -2,7 +2,7 @@ name: CI Pipeline
 
 on:
   push:
-    branches: ['main']
+    branches: ['main', 'openvine']
   pull_request:
     branches: ['main']
 
@@ -46,7 +46,7 @@ jobs:
     name: Build and Push Docker image
     needs: test
     runs-on: ubuntu-latest
-    if: ${{ github.ref == 'refs/heads/main' && needs.test.result == 'success' }}
+    if: ${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/openvine') && needs.test.result == 'success' }}
     permissions:
       packages: write
       contents: read
@@ -74,6 +74,7 @@ jobs:
           tags: |
             type=ref,event=branch,suffix=_{{sha}}
             type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=openvine_dev,enable=${{ github.ref == 'refs/heads/openvine' }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
