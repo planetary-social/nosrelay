@@ -8,6 +8,9 @@ services:
     environment:
       - RELAY_URL=wss://example.com
       - REDIS_URL=redis://redis:6379
+    volumes:
+      - ./strfry/config/strfry.conf:/etc/strfry.conf:ro
+      - ./strfry-router.conf:/etc/strfry-router.conf:ro
     depends_on:
       - redis
 
