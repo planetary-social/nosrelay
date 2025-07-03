@@ -20,6 +20,9 @@ const one_hour = 60 * one_minute;
 const one_day = 24 * one_hour;
 const two_days = 2 * one_day;
 
+// Parse additional whitelist IPs from environment variable
+const additionalWhitelistIps = Deno.env.get("WHITELIST_IPS")?.split(",").map(ip => ip.trim()).filter(ip => ip) || [];
+
 const redis_url = Deno.env.get("REDIS_URL");
 const redis_connect_options = parseURL(redis_url);
 const redis = await connect(redis_connect_options);
@@ -47,7 +50,7 @@ const policies = [
       max: 20,
       interval: one_minute,
       banInterval: two_days,
-      whitelist: [localhost, eventsIp, syncIp],
+      whitelist: [localhost, eventsIp, syncIp, ...additionalWhitelistIps],
       // We use a different db url so that this limiter is not affected by the other limiters.
       // The file is stored in the strfry-db folder for persistence between restarts.
       databaseUrl:
@@ -62,7 +65,7 @@ const policies = [
     {
       max: 10,
       interval: one_minute,
-      whitelist: [localhost, eventsIp, syncIp],
+      whitelist: [localhost, eventsIp, syncIp, ...additionalWhitelistIps],
     },
   ],
 
